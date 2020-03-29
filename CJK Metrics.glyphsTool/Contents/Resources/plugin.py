@@ -23,13 +23,14 @@ from vanilla.vanillaGroup import Group
 class PatchedGroup(Group):
     nsViewClass = objc.lookUpClass('GSInspectorView')
 
-class CJKMetrics(ReporterPlugin):
+class CJKMetrics(SelectTool):
 
 	@objc.python_method
 	def settings(self):
 		self.menuName = 'CJK Metrics'
 		self.name = 'CJK Metrics'
 
+	def activate(self):
 		self.centralAreaSpacing = 500.0
 		self.centralAreaWidth = 100.0
 		self.centralAreaPosition = 50.0
@@ -73,7 +74,6 @@ class CJKMetrics(ReporterPlugin):
 		self.centralAreaWidth = self.toFloat(sender.get())
 
 	def sliderCentralAreaPositionCallback(self, sender):
-		# print(sender.get(), type(sender.get()))
 		self.centralAreaPosition = sender.get()
 		self.sliderWindow.group.textBoxCentralAreaPosition.set("{:.1f}%".format(sender.get()))
 
@@ -84,7 +84,7 @@ class CJKMetrics(ReporterPlugin):
 		spacing = self.centralAreaSpacing
 		width = self.centralAreaWidth
 		postion = layer.width * self.centralAreaPosition / 100
-		
+
 		master = layer.associatedFontMaster()
 		descender = master.descender
 		ascender = master.ascender
@@ -101,3 +101,8 @@ class CJKMetrics(ReporterPlugin):
 			return float(s)
 		except ValueError:
 			return 0.0
+
+	@objc.python_method
+	def __file__(self):
+		"""Please leave this method unchanged"""
+		return __file__
