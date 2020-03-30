@@ -19,16 +19,24 @@ from GlyphsApp.plugins import *
 from vanilla import *
 from vanilla.vanillaGroup import Group
 
+
 # Our own patched Vanilla Group class
 class PatchedGroup(Group):
     nsViewClass = objc.lookUpClass('GSInspectorView')
+
 
 class CJKMetrics(SelectTool):
 
 	@objc.python_method
 	def settings(self):
-		self.menuName = 'CJK Metrics'
 		self.name = 'CJK Metrics'
+		self.keyboardShortcut = 'c'
+		self.menuItem = NSMenuItem('Show ' + self.name, self.toggleMenuItem)
+
+
+	def start(self):
+		Glyphs.menu[VIEW_MENU].append(self.menuItem)
+
 
 	def activate(self):
 		self.centralAreaSpacing = 500.0
@@ -59,26 +67,47 @@ class CJKMetrics(SelectTool):
 			sizeStyle='small')
 
 		# See https://forum.glyphsapp.com/t/how-to-create-an-info-box-in-plugin/14198
-		GSCallbackHandler.addCallback_forOperation_(self, "GSInspectorViewControllersCallback")
+		GSCallbackHandler.addCallback_forOperation_(self, 'GSInspectorViewControllersCallback')
+
 
 	def inspectorViewControllersForLayer_(self, layer):
 		return [self]
 
+
 	def view(self):
 		return self.sliderWindow.group.getNSView()
 
+
+	def toggleMenuItem(self, menuItem):
+		'''The callback invoked when click the CJK Metrics menu item.'''
+		if menuItem.state() == ONSTATE:
+			menuItem.setState_(OFFSTATE)
+		elif menuItem.state() == OFFSTATE:
+			menuItem.setState_(ONSTATE)
+
+
 	def editTextCentralAreaSpacingCallback(self, sender):
-		self.centralAreaSpacing = self.toFloat(sender.get())
+		self.centralAreaSpacing = toFloat(sender.get())
+
 
 	def editTextCentralAreaWidthCallback(self, sender):
-		self.centralAreaWidth = self.toFloat(sender.get())
+		self.centralAreaWidth = toFloat(sender.get())
+
 
 	def sliderCentralAreaPositionCallback(self, sender):
 		self.centralAreaPosition = sender.get()
-		self.sliderWindow.group.textBoxCentralAreaPosition.set("{:.1f}%".format(sender.get()))
+		self.sliderWindow.group.textBoxCentralAreaPosition.set('{:.1f}%'.format(sender.get()))
+
 
 	def foreground(self, layer):
+		self.drawMedialAxes(layer)
 		self.drawCentralArea(layer)
+
+
+	def drawMedialAxes(self, layer):
+		# TODO: draw real medial axes
+		NSBezierPath.strokeLineFromPoint_toPoint_((0,0), (1000,2000))
+
 
 	def drawCentralArea(self, layer):
 		spacing = self.centralAreaSpacing
@@ -90,19 +119,24 @@ class CJKMetrics(SelectTool):
 		ascender = master.ascender
 		height = ascender - descender
 
-		self.drawRect((postion - spacing / 2 - width / 2, descender), (width, height))
-		self.drawRect((postion + spacing / 2 - width / 2, descender), (width, height))
+		drawRect((postion - spacing / 2 - width / 2, descender), (width, height))
+		drawRect((postion + spacing / 2 - width / 2, descender), (width, height))
 
-	def drawRect(self, origin, size):
-		NSBezierPath.fillRect_((origin, size))
-
-	def toFloat(self, s):
-		try:
-			return float(s)
-		except ValueError:
-			return 0.0
 
 	@objc.python_method
 	def __file__(self):
-		"""Please leave this method unchanged"""
+		'''Please leave this method unchanged'''
 		return __file__
+
+
+def drawRect(origin, size):
+	'''Draw a rectange with `origin` and `size`.'''
+	NSBezierPath.fillRect_((origin, size))
+
+
+def toFloat(s):
+	'''Safely convert a string to float number.'''
+	try:
+		return float(s)
+	except ValueError:
+		return 0.0
