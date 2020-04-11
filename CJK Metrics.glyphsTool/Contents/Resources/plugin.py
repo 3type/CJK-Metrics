@@ -105,11 +105,40 @@ class CJKMetrics(SelectTool):
 
 
 	def drawMedialAxes(self, layer):
-		# TODO: draw real medial axes
-		NSBezierPath.strokeLineFromPoint_toPoint_((0,0), (1000,2000))
+		'''Draw the medial axes (水平垂直轴线).'''
+		# TODO: set vertical and horizontal in dialog
+		vertical = 0.5
+		horizontal = 0.5
+
+		scale = self.getScale()
+
+		view = self.editViewController().graphicView()
+		visibleRect = view.visibleRect()
+		activePosition = view.activePosition()
+
+		viewOriginX = (visibleRect.origin.x - activePosition.x) / scale
+		viewOriginY = (visibleRect.origin.y - activePosition.y) / scale
+		viewWidth = visibleRect.size.width / scale
+		viewHeight = visibleRect.size.height / scale
+
+		master = layer.associatedFontMaster()
+		height = master.ascender - master.descender
+		width  = layer.width
+
+		x = horizontal * width
+		y = master.descender + vertical * height
+
+		path = NSBezierPath.bezierPath()
+		path.moveToPoint_((viewOriginX, y))
+		path.lineToPoint_((viewOriginX + viewWidth, y))
+		path.moveToPoint_((x, viewOriginY))
+		path.lineToPoint_((x, viewOriginY + viewHeight))
+		path.setLineWidth_(1 / scale)
+		path.stroke()
 
 
 	def drawCentralArea(self, layer):
+		'''Draw the central area (第二中心线).'''
 		spacing = self.centralAreaSpacing
 		width = self.centralAreaWidth
 		postion = layer.width * self.centralAreaPosition / 100
@@ -119,19 +148,22 @@ class CJKMetrics(SelectTool):
 		ascender = master.ascender
 		height = ascender - descender
 
-		drawRect((postion - spacing / 2 - width / 2, descender), (width, height))
-		drawRect((postion + spacing / 2 - width / 2, descender), (width, height))
+		NSBezierPath.fillRect_((postion - spacing / 2 - width / 2, descender), (width, height))
+		NSBezierPath.fillRect_((postion + spacing / 2 - width / 2, descender), (width, height))
+
+
+	def getScale(self):
+		'''Get the scale of graphic view.'''
+		try:
+			return self.editViewController().graphicView().scale()
+		except:
+			return 1.0
 
 
 	@objc.python_method
 	def __file__(self):
 		'''Please leave this method unchanged'''
 		return __file__
-
-
-def drawRect(origin, size):
-	'''Draw a rectange with `origin` and `size`.'''
-	NSBezierPath.fillRect_((origin, size))
 
 
 def toFloat(s):
