@@ -3,10 +3,10 @@
 ###########################################################################################################
 #
 #
-#	Reporter Plugin: CJK Metrics
+#	Select Tool Plugin: CJK Metrics
 #
 #	Read the docs:
-#	https://github.com/schriftgestalt/GlyphsSDK/tree/master/Python%20Templates/Reporter
+#	https://github.com/schriftgestalt/GlyphsSDK/tree/master/Python%20Templates/SelectTool
 #
 #
 ##############################################################################################
@@ -17,7 +17,6 @@ from GlyphsApp import *
 from GlyphsApp.plugins import *
 
 from vanilla import *
-from vanilla.vanillaGroup import Group
 
 
 # Our own patched Vanilla Group class
@@ -31,11 +30,14 @@ class CJKMetrics(SelectTool):
 	def settings(self):
 		self.name = 'CJK Metrics'
 		self.keyboardShortcut = 'c'
-		self.menuItem = NSMenuItem('Show ' + self.name, self.toggleMenuItem)
+
+		self.medialAxesState = ONSTATE
+		self.centralAreaState = ONSTATE
+		self.cjkGuideState = ONSTATE
 
 
-	def start(self):
-		Glyphs.menu[VIEW_MENU].append(self.menuItem)
+	# def start(self):
+	# 	Glyphs.menu[VIEW_MENU].append(self.menuItem)
 
 
 	def activate(self):
@@ -91,14 +93,6 @@ class CJKMetrics(SelectTool):
 			layer.width = 1000.0  # TODO: use real width
 
 
-	def toggleMenuItem(self, menuItem):
-		'''The callback invoked when click the CJK Metrics menu item.'''
-		if menuItem.state() == ONSTATE:
-			menuItem.setState_(OFFSTATE)
-		elif menuItem.state() == OFFSTATE:
-			menuItem.setState_(ONSTATE)
-
-
 	def editTextCentralAreaSpacingCallback(self, sender):
 		self.centralAreaSpacing = toFloat(sender.get())
 
@@ -112,10 +106,45 @@ class CJKMetrics(SelectTool):
 		self.sliderWindow.group.textBoxCentralAreaPosition.set('{:.1f}%'.format(sender.get()))
 
 
+	def conditionalContextMenus(self):
+		return [
+			{
+				'name': 'Show Medial Axes',
+				'action': self.toggleMedialAxes,
+				'state': self.medialAxesState
+			},
+			{
+				'name': 'Show Central Area',
+				'action': self.toggleCentralArea,
+				'state': self.centralAreaState
+			},
+			{
+				'name': 'Show CJK Guide',
+				'action': self.toggleCJKGuide,
+				'state': self.cjkGuideState
+			},
+		]
+
+
+	def toggleMedialAxes(self):
+		self.medialAxesState = OFFSTATE if self.medialAxesState == ONSTATE else ONSTATE
+
+
+	def toggleCentralArea(self):
+		self.centralAreaState = OFFSTATE if self.centralAreaState == ONSTATE else ONSTATE
+
+
+	def toggleCJKGuide(self):
+		self.cjkGuideState = OFFSTATE if self.cjkGuideState == ONSTATE else ONSTATE
+
+
 	def foreground(self, layer):
-		self.drawMedialAxes(layer)
-		self.drawCentralArea(layer)
-		self.drawCJKGuide(layer)
+		if self.medialAxesState == ONSTATE:
+			self.drawMedialAxes(layer)
+		if self.centralAreaState == ONSTATE:
+			self.drawCentralArea(layer)
+		if self.cjkGuideState == ONSTATE:
+			self.drawCJKGuide(layer)
 
 
 	def drawMedialAxes(self, layer):
@@ -143,7 +172,6 @@ class CJKMetrics(SelectTool):
 		y = master.descender + vertical * height
 
 		path = NSBezierPath.bezierPath()
-		print('drawMedialAxes()', path)
 		path.moveToPoint_((viewOriginX, y))
 		path.lineToPoint_((viewOriginX + viewWidth, y))
 		path.moveToPoint_((x, viewOriginY))
@@ -178,31 +206,6 @@ class CJKMetrics(SelectTool):
 			return self.editViewController().graphicView().scale()
 		except:
 			return 1.0
-
-
-	# def mouseDown_(self, event):
-	# 	Glyphs.font.selectedLayers[0].clearSelection()
-	# 	mousePosition = self.editViewController().graphicView().getActiveLocation_(event)
-	# 	self.cjkguideMousePosition = mousePosition
-
-
-	# def mouseDragged_(self, event):
-	# 	print('mouseDragged_', event)
-
-
-	# def mouseUp_(self, event):
-	# 	mousePosition = self.editViewController().graphicView().getActiveLocation_(event)
-
-	# 	p1 = (self.cjkguideMousePosition.x, self.cjkguideMousePosition.y)
-	# 	p2 = (self.cjkguideMousePosition.x, mousePosition.y)
-	# 	p3 = (mousePosition.x, mousePosition.y)
-	# 	p4 = (mousePosition.x, self.cjkguideMousePosition.y)
-
-	# 	path = GSPath()
-	# 	for p in [p1, p2, p3, p4]:
-	# 		path.nodes.append(GSNode(p, type=LINE))
-	# 	path.closed = True
-	# 	Glyphs.font.glyphs['_cjkguide'].layers[0].paths.append(path)
 
 
 	@objc.python_method
