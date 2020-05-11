@@ -22,7 +22,7 @@ from vanilla.vanillaGroup import Group
 
 # Our own patched Vanilla Group class
 class PatchedGroup(Group):
-    nsViewClass = objc.lookUpClass('GSInspectorView')
+	nsViewClass = objc.lookUpClass('GSInspectorView')
 
 
 class CJKMetrics(SelectTool):
@@ -39,6 +39,8 @@ class CJKMetrics(SelectTool):
 
 
 	def activate(self):
+		self.initCJKGuideGlyph()
+
 		self.centralAreaSpacing = 500.0
 		self.centralAreaWidth = 100.0
 		self.centralAreaPosition = 50.0
@@ -78,6 +80,17 @@ class CJKMetrics(SelectTool):
 		return self.sliderWindow.group.getNSView()
 
 
+	def initCJKGuideGlyph(self):
+		font = Glyphs.font
+		if font.glyphs['_cjkguide'] is None:
+			# TODO: dialogue
+			font.glyphs.append(GSGlyph('_cjkguide'))
+		cjkguideGlyph = font.glyphs['_cjkguide']
+		cjkguideGlyph.export = False
+		for layer in cjkguideGlyph.layers:
+			layer.width = 1000.0  # TODO: use real width
+
+
 	def toggleMenuItem(self, menuItem):
 		'''The callback invoked when click the CJK Metrics menu item.'''
 		if menuItem.state() == ONSTATE:
@@ -102,6 +115,7 @@ class CJKMetrics(SelectTool):
 	def foreground(self, layer):
 		self.drawMedialAxes(layer)
 		self.drawCentralArea(layer)
+		self.drawCJKGuide(layer)
 
 
 	def drawMedialAxes(self, layer):
@@ -129,6 +143,7 @@ class CJKMetrics(SelectTool):
 		y = master.descender + vertical * height
 
 		path = NSBezierPath.bezierPath()
+		print('drawMedialAxes()', path)
 		path.moveToPoint_((viewOriginX, y))
 		path.lineToPoint_((viewOriginX + viewWidth, y))
 		path.moveToPoint_((x, viewOriginY))
@@ -148,8 +163,13 @@ class CJKMetrics(SelectTool):
 		ascender = master.ascender
 		height = ascender - descender
 
-		NSBezierPath.fillRect_((postion - spacing / 2 - width / 2, descender), (width, height))
-		NSBezierPath.fillRect_((postion + spacing / 2 - width / 2, descender), (width, height))
+		NSBezierPath.fillRect_(((postion - spacing / 2 - width / 2, descender), (width, height)))
+		NSBezierPath.fillRect_(((postion + spacing / 2 - width / 2, descender), (width, height)))
+
+
+	def drawCJKGuide(self, layer):
+		'''Draw the CJK guide (汉字参考线).'''
+		Glyphs.font.glyphs['_cjkguide'].layers[0].bezierPath.fill()
 
 
 	def getScale(self):
@@ -158,6 +178,31 @@ class CJKMetrics(SelectTool):
 			return self.editViewController().graphicView().scale()
 		except:
 			return 1.0
+
+
+	# def mouseDown_(self, event):
+	# 	Glyphs.font.selectedLayers[0].clearSelection()
+	# 	mousePosition = self.editViewController().graphicView().getActiveLocation_(event)
+	# 	self.cjkguideMousePosition = mousePosition
+
+
+	# def mouseDragged_(self, event):
+	# 	print('mouseDragged_', event)
+
+
+	# def mouseUp_(self, event):
+	# 	mousePosition = self.editViewController().graphicView().getActiveLocation_(event)
+
+	# 	p1 = (self.cjkguideMousePosition.x, self.cjkguideMousePosition.y)
+	# 	p2 = (self.cjkguideMousePosition.x, mousePosition.y)
+	# 	p3 = (mousePosition.x, mousePosition.y)
+	# 	p4 = (mousePosition.x, self.cjkguideMousePosition.y)
+
+	# 	path = GSPath()
+	# 	for p in [p1, p2, p3, p4]:
+	# 		path.nodes.append(GSNode(p, type=LINE))
+	# 	path.closed = True
+	# 	Glyphs.font.glyphs['_cjkguide'].layers[0].paths.append(path)
 
 
 	@objc.python_method
