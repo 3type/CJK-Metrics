@@ -138,7 +138,7 @@ class CJKMetrics(SelectTool):
 		self.cjkGuideState = OFFSTATE if self.cjkGuideState == ONSTATE else ONSTATE
 
 
-	def foreground(self, layer):
+	def background(self, layer):
 		if self.medialAxesState == ONSTATE:
 			self.drawMedialAxes(layer)
 		if self.centralAreaState == ONSTATE:
@@ -171,6 +171,10 @@ class CJKMetrics(SelectTool):
 		x = horizontal * width
 		y = master.descender + vertical * height
 
+		# TODO: color
+		color = NSColor.systemGreenColor()
+		color.set()
+
 		path = NSBezierPath.bezierPath()
 		path.moveToPoint_((viewOriginX, y))
 		path.lineToPoint_((viewOriginX + viewWidth, y))
@@ -191,12 +195,21 @@ class CJKMetrics(SelectTool):
 		ascender = master.ascender
 		height = ascender - descender
 
+		# TODO: color
+		color = NSColor.systemGrayColor().colorWithAlphaComponent_(0.2)
+		color.set()
+
 		NSBezierPath.fillRect_(((postion - spacing / 2 - width / 2, descender), (width, height)))
 		NSBezierPath.fillRect_(((postion + spacing / 2 - width / 2, descender), (width, height)))
 
 
 	def drawCJKGuide(self, layer):
 		'''Draw the CJK guide (汉字参考线).'''
+
+		# TODO: color
+		color = NSColor.systemOrangeColor().colorWithAlphaComponent_(0.2)
+		color.set()
+
 		Glyphs.font.glyphs['_cjkguide'].layers[0].bezierPath.fill()
 
 
