@@ -19,6 +19,8 @@ from GlyphsApp.plugins import *
 from vanilla import *
 
 
+CJK_GUIDE_GLYPH = '_cjkguide'
+
 # Our own patched Vanilla Group class
 class PatchedGroup(Group):
 	nsViewClass = objc.lookUpClass('GSInspectorView')
@@ -34,14 +36,7 @@ class CJKMetrics(SelectTool):
 		self.medialAxesState = ONSTATE
 		self.centralAreaState = ONSTATE
 		self.cjkGuideState = ONSTATE
-
-
-	# def start(self):
-	# 	Glyphs.menu[VIEW_MENU].append(self.menuItem)
-
-
-	def activate(self):
-		self.initCJKGuideGlyph()
+		self.cjkGuideScalingState = OFFSTATE
 
 		self.centralAreaSpacing = 500.0
 		self.centralAreaWidth = 100.0
@@ -74,6 +69,14 @@ class CJKMetrics(SelectTool):
 		GSCallbackHandler.addCallback_forOperation_(self, 'GSInspectorViewControllersCallback')
 
 
+	# def start(self):
+	# 	Glyphs.menu[VIEW_MENU].append(self.menuItem)
+
+
+	def activate(self):
+		self.initCjkGuideGlyph()
+
+
 	def inspectorViewControllersForLayer_(self, layer):
 		return [self]
 
@@ -82,15 +85,17 @@ class CJKMetrics(SelectTool):
 		return self.sliderWindow.group.getNSView()
 
 
-	def initCJKGuideGlyph(self):
+	def initCjkGuideGlyph(self):
 		font = Glyphs.font
-		if font.glyphs['_cjkguide'] is None:
+		if not font.glyphs[CJK_GUIDE_GLYPH]:
 			# TODO: dialogue
-			font.glyphs.append(GSGlyph('_cjkguide'))
-		cjkguideGlyph = font.glyphs['_cjkguide']
-		cjkguideGlyph.export = False
-		for layer in cjkguideGlyph.layers:
-			layer.width = 1000.0  # TODO: use real width
+			font.glyphs.append(GSGlyph(CJK_GUIDE_GLYPH))
+			print('[INFO]: Add glyph \'{}\'!'.format(CJK_GUIDE_GLYPH))
+
+			cjkGuideGlyph = font.glyphs[CJK_GUIDE_GLYPH]
+			cjkGuideGlyph.export = False
+			for layer in cjkGuideGlyph.layers:
+				layer.width = 1000.0  # TODO: use real width
 
 
 	def editTextCentralAreaSpacingCallback(self, sender):
@@ -120,8 +125,13 @@ class CJKMetrics(SelectTool):
 			},
 			{
 				'name': 'Show CJK Guide',
-				'action': self.toggleCJKGuide,
+				'action': self.toggleCjkGuide,
 				'state': self.cjkGuideState
+			},
+			{
+				'name': 'Scale CJK Guide',
+				'action': self.toggleCjkGuideScaling,
+				'state': self.cjkGuideScalingState
 			},
 		]
 
@@ -134,8 +144,12 @@ class CJKMetrics(SelectTool):
 		self.centralAreaState = OFFSTATE if self.centralAreaState == ONSTATE else ONSTATE
 
 
-	def toggleCJKGuide(self):
+	def toggleCjkGuide(self):
 		self.cjkGuideState = OFFSTATE if self.cjkGuideState == ONSTATE else ONSTATE
+
+
+	def toggleCjkGuideScaling(self):
+		self.cjkGuideScalingState = OFFSTATE if self.cjkGuideScalingState == ONSTATE else ONSTATE
 
 
 	def background(self, layer):
@@ -144,7 +158,7 @@ class CJKMetrics(SelectTool):
 		if self.centralAreaState == ONSTATE:
 			self.drawCentralArea(layer)
 		if self.cjkGuideState == ONSTATE:
-			self.drawCJKGuide(layer)
+			self.drawCjkGuide(layer)
 
 
 	def drawMedialAxes(self, layer):
@@ -203,14 +217,40 @@ class CJKMetrics(SelectTool):
 		NSBezierPath.fillRect_(((postion + spacing / 2 - width / 2, descender), (width, height)))
 
 
-	def drawCJKGuide(self, layer):
+	def drawCjkGuide(self, layer):
 		'''Draw the CJK guide (汉字参考线).'''
 
 		# TODO: color
 		color = NSColor.systemOrangeColor().colorWithAlphaComponent_(0.2)
 		color.set()
 
-		Glyphs.font.glyphs['_cjkguide'].layers[0].bezierPath.fill()
+		cjkGuideLayer = Glyphs.font.glyphs['_cjkguide'].layers[0]
+
+		trans = NSAffineTransform.transform()
+		if self.cjkGuideScalingState == ONSTATE:
+			# TODO: currently only xScale is necessary
+			# cjkGuideMaster = cjkGuideLayer.associatedFontMaster()
+			# cjkGuideDescender = cjkGuideMaster.descender
+			# cjkGuideAscender = cjkGuideMaster.ascender
+			# cjkGuideHeight = cjkGuideAscender - cjkGuideDescender
+
+			# master = layer.associatedFontMaster()
+			# descender = master.descender
+			# ascender = master.ascender
+			# height = ascender - descender
+
+			xScale = layer.width / cjkGuideLayer.width
+			# yScale = height / cjkGuideHeight
+
+			# trans.translateXBy_yBy_(0, cjkGuideDescender)
+			# trans.scaleXBy_yBy_(xScale, yScale)
+			# trans.translateXBy_yBy_(0, -descender)
+			
+			trans.scaleXBy_yBy_(xScale, 1)
+
+		path = cjkGuideLayer.bezierPath.copy()
+		path.transformUsingAffineTransform_(trans)
+		path.fill()
 
 
 	def getScale(self):
