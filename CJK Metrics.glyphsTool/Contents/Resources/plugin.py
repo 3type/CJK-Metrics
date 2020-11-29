@@ -73,18 +73,22 @@ class CJKMetrics(SelectTool):
 	# 	Glyphs.menu[VIEW_MENU].append(self.menuItem)
 
 
+	@objc.python_method
 	def activate(self):
 		self.initCjkGuideGlyph()
 
 
+	@objc.python_method
 	def inspectorViewControllersForLayer_(self, layer):
 		return [self]
 
 
+	@objc.python_method
 	def view(self):
 		return self.sliderWindow.group.getNSView()
 
 
+	@objc.python_method
 	def initCjkGuideGlyph(self):
 		font = Glyphs.font
 		if not font.glyphs[CJK_GUIDE_GLYPH]:
@@ -98,19 +102,23 @@ class CJKMetrics(SelectTool):
 				layer.width = 1000.0  # TODO: use real width
 
 
+	@objc.python_method
 	def editTextCentralAreaSpacingCallback(self, sender):
 		self.centralAreaSpacing = toFloat(sender.get())
 
 
+	@objc.python_method
 	def editTextCentralAreaWidthCallback(self, sender):
 		self.centralAreaWidth = toFloat(sender.get())
 
 
+	@objc.python_method
 	def sliderCentralAreaPositionCallback(self, sender):
 		self.centralAreaPosition = sender.get()
 		self.sliderWindow.group.textBoxCentralAreaPosition.set('{:.1f}%'.format(sender.get()))
 
 
+	@objc.python_method
 	def conditionalContextMenus(self):
 		return [
 			{
@@ -136,22 +144,27 @@ class CJKMetrics(SelectTool):
 		]
 
 
+	@objc.python_method
 	def toggleMedialAxes(self):
 		self.medialAxesState = OFFSTATE if self.medialAxesState == ONSTATE else ONSTATE
 
 
+	@objc.python_method
 	def toggleCentralArea(self):
 		self.centralAreaState = OFFSTATE if self.centralAreaState == ONSTATE else ONSTATE
 
 
+	@objc.python_method
 	def toggleCjkGuide(self):
 		self.cjkGuideState = OFFSTATE if self.cjkGuideState == ONSTATE else ONSTATE
 
 
+	@objc.python_method
 	def toggleCjkGuideScaling(self):
 		self.cjkGuideScalingState = OFFSTATE if self.cjkGuideScalingState == ONSTATE else ONSTATE
 
 
+	@objc.python_method
 	def background(self, layer):
 		if self.medialAxesState == ONSTATE:
 			self.drawMedialAxes(layer)
@@ -161,6 +174,7 @@ class CJKMetrics(SelectTool):
 			self.drawCjkGuide(layer)
 
 
+	@objc.python_method
 	def drawMedialAxes(self, layer):
 		'''Draw the medial axes (水平垂直轴线).'''
 		# TODO: set vertical and horizontal in dialog
@@ -198,6 +212,7 @@ class CJKMetrics(SelectTool):
 		path.stroke()
 
 
+	@objc.python_method
 	def drawCentralArea(self, layer):
 		'''Draw the central area (第二中心线).'''
 		spacing = self.centralAreaSpacing
@@ -217,6 +232,7 @@ class CJKMetrics(SelectTool):
 		NSBezierPath.fillRect_(((postion + spacing / 2 - width / 2, descender), (width, height)))
 
 
+	@objc.python_method
 	def drawCjkGuide(self, layer):
 		'''Draw the CJK guide (汉字参考线).'''
 
@@ -252,7 +268,7 @@ class CJKMetrics(SelectTool):
 		path.transformUsingAffineTransform_(trans)
 		path.fill()
 
-
+	@objc.python_method
 	def getScale(self):
 		'''Get the scale of graphic view.'''
 		try:
