@@ -13,6 +13,8 @@
 
 import objc
 
+from Foundation import NSAffineTransform, NSBezierPath, NSColor
+
 from GlyphsApp import *
 from GlyphsApp.plugins import *
 
@@ -22,8 +24,9 @@ from vanilla import *
 CJK_GUIDE_GLYPH = '_cjkguide'
 
 # Our own patched Vanilla Group class
-class PatchedGroup(Group):
-	nsViewClass = objc.lookUpClass('GSInspectorView')
+# class PatchedGroup(Group):
+# 	nsViewClass = objc.lookUpClass('GSInspectorView')
+# 	nsViewClass = GSInspectorView
 
 
 class CJKMetrics(SelectTool):
@@ -33,10 +36,10 @@ class CJKMetrics(SelectTool):
 		self.name = 'CJK Metrics'
 		self.keyboardShortcut = 'c'
 
-		self.medialAxesState = ONSTATE
-		self.centralAreaState = ONSTATE
-		self.cjkGuideState = ONSTATE
-		self.cjkGuideScalingState = OFFSTATE
+		self.medialAxesState = True
+		self.centralAreaState = True
+		self.cjkGuideState = True
+		self.cjkGuideScalingState = False
 
 		self.centralAreaSpacing = 500.0
 		self.centralAreaWidth = 100.0
@@ -45,7 +48,7 @@ class CJKMetrics(SelectTool):
 		viewWidth = 150
 		viewHeight = 40
 		self.sliderWindow = Window((viewWidth, viewHeight))
-		self.sliderWindow.group = PatchedGroup((0, 0, viewWidth, viewHeight))
+		self.sliderWindow.group = Group((0, 0, viewWidth, viewHeight))
 		self.sliderWindow.group.editTextCentralAreaSpacing = EditText(
 			(0, 2, 60, 16),
 			sizeStyle='small',
@@ -64,6 +67,8 @@ class CJKMetrics(SelectTool):
 			(100, 20, 45, 12),
 			text=str(self.centralAreaPosition) + '%',
 			sizeStyle='small')
+
+		self.generalContextMenus = self.buildContextMenus()
 
 		# See https://forum.glyphsapp.com/t/how-to-create-an-info-box-in-plugin/14198
 		GSCallbackHandler.addCallback_forOperation_(self, 'GSInspectorViewControllersCallback')
@@ -91,7 +96,7 @@ class CJKMetrics(SelectTool):
 	@objc.python_method
 	def initCjkGuideGlyph(self):
 		font = Glyphs.font
-		if not font.glyphs[CJK_GUIDE_GLYPH]:
+		if font.glyphs[CJK_GUIDE_GLYPH] is None:
 			# TODO: dialogue
 			font.glyphs.append(GSGlyph(CJK_GUIDE_GLYPH))
 			print('[INFO]: Add glyph \'{}\'!'.format(CJK_GUIDE_GLYPH))
@@ -119,58 +124,64 @@ class CJKMetrics(SelectTool):
 
 
 	@objc.python_method
-	def conditionalContextMenus(self):
+	def buildContextMenus(self, sender=None):
 		return [
+			{
+				'name': 'CJK Metrics Options:', 
+				'action': None,
+			},
 			{
 				'name': 'Show Medial Axes',
 				'action': self.toggleMedialAxes,
-				'state': self.medialAxesState
+				'state': self.medialAxesState,
 			},
 			{
 				'name': 'Show Central Area',
 				'action': self.toggleCentralArea,
-				'state': self.centralAreaState
+				'state': self.centralAreaState,
 			},
 			{
 				'name': 'Show CJK Guide',
 				'action': self.toggleCjkGuide,
-				'state': self.cjkGuideState
+				'state': self.cjkGuideState,
 			},
 			{
 				'name': 'Scale CJK Guide',
 				'action': self.toggleCjkGuideScaling,
-				'state': self.cjkGuideScalingState
+				'state': self.cjkGuideScalingState,
 			},
 		]
 
 
-	@objc.python_method
 	def toggleMedialAxes(self):
-		self.medialAxesState = OFFSTATE if self.medialAxesState == ONSTATE else ONSTATE
+		self.medialAxesState = not self.medialAxesState
+		self.generalContextMenus = self.buildContextMenus()
 
 
-	@objc.python_method
 	def toggleCentralArea(self):
-		self.centralAreaState = OFFSTATE if self.centralAreaState == ONSTATE else ONSTATE
+		self.centralAreaState = not self.centralAreaState
+		self.generalContextMenus = self.buildContextMenus()
 
 
-	@objc.python_method
 	def toggleCjkGuide(self):
-		self.cjkGuideState = OFFSTATE if self.cjkGuideState == ONSTATE else ONSTATE
+		self.cjkGuideState = not self.cjkGuideState
+		self.generalContextMenus = self.buildContextMenus()
 
 
-	@objc.python_method
 	def toggleCjkGuideScaling(self):
-		self.cjkGuideScalingState = OFFSTATE if self.cjkGuideScalingState == ONSTATE else ONSTATE
+		self.cjkGuideScalingState = not self.cjkGuideScalingState
+		self.generalContextMenus = self.buildContextMenus()
 
 
 	@objc.python_method
-	def background(self, layer):
-		if self.medialAxesState == ONSTATE:
+	# def background(self, layer):
+	def foreground(self, layer):
+		# TODO: use foreground() temporarily
+		if self.medialAxesState:
 			self.drawMedialAxes(layer)
-		if self.centralAreaState == ONSTATE:
+		if self.centralAreaState:
 			self.drawCentralArea(layer)
-		if self.cjkGuideState == ONSTATE:
+		if self.cjkGuideState:
 			self.drawCjkGuide(layer)
 
 
@@ -237,7 +248,7 @@ class CJKMetrics(SelectTool):
 		'''Draw the CJK guide (汉字参考线).'''
 
 		# TODO: color
-		color = NSColor.systemOrangeColor().colorWithAlphaComponent_(0.2)
+		color = NSColor.systemOrangeColor().colorWithAlphaComponent_(0.1)
 		color.set()
 
 		cjkGuideLayer = Glyphs.font.glyphs['_cjkguide'].layers[0]
@@ -249,7 +260,7 @@ class CJKMetrics(SelectTool):
 			# cjkGuideDescender = cjkGuideMaster.descender
 			# cjkGuideAscender = cjkGuideMaster.ascender
 			# cjkGuideHeight = cjkGuideAscender - cjkGuideDescender
-
+ 
 			# master = layer.associatedFontMaster()
 			# descender = master.descender
 			# ascender = master.ascender
@@ -261,12 +272,13 @@ class CJKMetrics(SelectTool):
 			# trans.translateXBy_yBy_(0, cjkGuideDescender)
 			# trans.scaleXBy_yBy_(xScale, yScale)
 			# trans.translateXBy_yBy_(0, -descender)
-			
+
 			trans.scaleXBy_yBy_(xScale, 1)
 
-		path = cjkGuideLayer.bezierPath.copy()
-		path.transformUsingAffineTransform_(trans)
-		path.fill()
+		if cjkGuideLayer.bezierPath is not None:
+			path = cjkGuideLayer.bezierPath.copy()
+			path.transformUsingAffineTransform_(trans)
+			path.fill()
 
 	@objc.python_method
 	def getScale(self):
