@@ -36,6 +36,7 @@ class CJKMetrics(SelectTool):
 
 		self.medialAxesState = True
 		self.centralAreaState = True
+		self.centralAreaRotateState = False
 		self.cjkGuideState = True
 		self.cjkGuideScalingState = False
 
@@ -165,6 +166,14 @@ class CJKMetrics(SelectTool):
 				'state': self.centralAreaState,
 			},
 			{
+				'name': Glyphs.localize({
+					'en': u'Rotate Central Area',
+					'zh': u'旋转第二中心区域',
+				}),
+				'action': self.rotateCentralArea,
+				'state': self.centralAreaRotateState,
+			},
+			{
 				'view': self.windowCentralArea.group.getNSView(),
 			},
 			{
@@ -207,6 +216,10 @@ class CJKMetrics(SelectTool):
 			self.windowCentralArea.group.textBoxPosition.enable(False)
 			self.windowCentralArea.group.sliderPosition.enable(False)
 			self.windowCentralArea.group.textBoxPositionValue.enable(False)
+		self.generalContextMenus = self.buildContextMenus()
+
+	def rotateCentralArea(self):
+		self.centralAreaRotateState = not self.centralAreaRotateState
 		self.generalContextMenus = self.buildContextMenus()
 
 	def toggleCjkGuide(self):
@@ -269,20 +282,31 @@ class CJKMetrics(SelectTool):
 	def drawCentralArea(self, layer):
 		'''Draw the central area (第二中心区域).'''
 		spacing = self.centralAreaSpacing
-		width = self.centralAreaWidth
-		postion = layer.width * self.centralAreaPosition / 100
 
 		master = layer.associatedFontMaster()
 		descender = master.descender
 		ascender = master.ascender
-		height = ascender - descender
+
+		if not self.centralAreaRotateState:
+			width = self.centralAreaWidth
+			height = ascender - descender
+			x_mid = layer.width * self.centralAreaPosition / 100
+			(x0, y0) = (x_mid - spacing / 2 - width / 2, descender)
+			(x1, y1) = (x_mid + spacing / 2 - width / 2, descender)
+		else:
+			width = layer.width
+			height = self.centralAreaWidth
+			y_mid = descender + (ascender - descender) * self.centralAreaPosition / 100
+			(x0, y0) = (0, y_mid - spacing / 2 - height / 2)
+			(x1, y1) = (0, y_mid + spacing / 2 - height / 2)
 
 		# TODO: color
 		color = NSColor.systemGrayColor().colorWithAlphaComponent_(0.2)
 		color.set()
 
-		NSBezierPath.fillRect_(((postion - spacing / 2 - width / 2, descender), (width, height)))
-		NSBezierPath.fillRect_(((postion + spacing / 2 - width / 2, descender), (width, height)))
+		NSBezierPath.fillRect_(((x0, y0), (width, height)))
+		NSBezierPath.fillRect_(((x1, y1), (width, height)))
+
 
 	@objc.python_method
 	def drawCjkGuide(self, layer):
@@ -295,7 +319,7 @@ class CJKMetrics(SelectTool):
 		cjkGuideLayer = Glyphs.font.glyphs[CJK_GUIDE_GLYPH].layers[0]
 
 		trans = NSAffineTransform.transform()
-		if self.cjkGuideScalingState == ONSTATE:
+		if self.cjkGuideScalingState:
 			# TODO: currently only xScale is necessary
 			# cjkGuideMaster = cjkGuideLayer.associatedFontMaster()
 			# cjkGuideDescender = cjkGuideMaster.descender
