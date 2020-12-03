@@ -23,11 +23,6 @@ from vanilla import *
 
 CJK_GUIDE_GLYPH = '_cjkguide'
 
-# Our own patched Vanilla Group class
-# class PatchedGroup(Group):
-# 	nsViewClass = objc.lookUpClass('GSInspectorView')
-# 	nsViewClass = GSInspectorView
-
 
 class CJKMetrics(SelectTool):
 
@@ -45,53 +40,44 @@ class CJKMetrics(SelectTool):
 		self.centralAreaWidth = 100.0
 		self.centralAreaPosition = 50.0
 
-		viewWidth = 150
-		viewHeight = 40
-		self.sliderWindow = Window((viewWidth, viewHeight))
-		self.sliderWindow.group = Group((0, 0, viewWidth, viewHeight))
-		self.sliderWindow.group.editTextCentralAreaSpacing = EditText(
-			(0, 2, 60, 16),
+		self.windowCentralArea = Window((200, 60))
+		self.windowCentralArea.group = Group((0, 0, 200, 60))
+		self.windowCentralArea.group.textBoxSpacing = TextBox(
+			(30, 4, 50, 16),
+			text='Spacing',
+			sizeStyle='small')
+		self.windowCentralArea.group.editTextSpacing = EditText(
+			(85, 2, 60, 16),
 			sizeStyle='small',
 			placeholder='500',
 			callback=self.editTextCentralAreaSpacingCallback)
-		self.sliderWindow.group.editTextCentralAreaWidth = EditText(
-			(80, 2, 60, 16),
+		self.windowCentralArea.group.textBoxWidth = TextBox(
+			(30, 24, 50, 16),
+			text='Width',
+			sizeStyle='small')
+		self.windowCentralArea.group.editTextWidth = EditText(
+			(85, 22, 60, 16),
 			sizeStyle='small',
 			placeholder='100',
 			callback=self.editTextCentralAreaWidthCallback)
-		self.sliderWindow.group.sliderCentralAreaPosition = Slider(
-			(0, 20, 100, 12),
+		self.windowCentralArea.group.textBoxPosition = TextBox(
+			(30, 44, 50, 16),
+			text='Position',
+			sizeStyle='small')
+		self.windowCentralArea.group.sliderPosition = Slider(
+			(85, 42, 60, 16),
 			sizeStyle='small',
 			callback=self.sliderCentralAreaPositionCallback)
-		self.sliderWindow.group.textBoxCentralAreaPosition = TextBox(
-			(100, 20, 45, 12),
-			text=str(self.centralAreaPosition) + '%',
+		self.windowCentralArea.group.textBoxPositionValue = TextBox(
+			(150, 44, 50, 16),
+			text='{}%'.format(self.centralAreaPosition),
 			sizeStyle='small')
 
 		self.generalContextMenus = self.buildContextMenus()
 
-		# See https://forum.glyphsapp.com/t/how-to-create-an-info-box-in-plugin/14198
-		GSCallbackHandler.addCallback_forOperation_(self, 'GSInspectorViewControllersCallback')
-
-
-	# def start(self):
-	# 	Glyphs.menu[VIEW_MENU].append(self.menuItem)
-
-
 	@objc.python_method
 	def activate(self):
 		self.initCjkGuideGlyph()
-
-
-	@objc.python_method
-	def inspectorViewControllersForLayer_(self, layer):
-		return [self]
-
-
-	@objc.python_method
-	def view(self):
-		return self.sliderWindow.group.getNSView()
-
 
 	@objc.python_method
 	def initCjkGuideGlyph(self):
@@ -106,22 +92,18 @@ class CJKMetrics(SelectTool):
 			for layer in cjkGuideGlyph.layers:
 				layer.width = 1000.0  # TODO: use real width
 
-
 	@objc.python_method
 	def editTextCentralAreaSpacingCallback(self, sender):
 		self.centralAreaSpacing = toFloat(sender.get())
-
 
 	@objc.python_method
 	def editTextCentralAreaWidthCallback(self, sender):
 		self.centralAreaWidth = toFloat(sender.get())
 
-
 	@objc.python_method
 	def sliderCentralAreaPositionCallback(self, sender):
 		self.centralAreaPosition = sender.get()
-		self.sliderWindow.group.textBoxCentralAreaPosition.set('{:.1f}%'.format(sender.get()))
-
+		self.windowCentralArea.group.textBoxPositionValue.set('{:.1f}%'.format(sender.get()))
 
 	@objc.python_method
 	def buildContextMenus(self, sender=None):
@@ -141,6 +123,9 @@ class CJKMetrics(SelectTool):
 				'state': self.centralAreaState,
 			},
 			{
+				'view': self.windowCentralArea.group.getNSView(),
+			},
+			{
 				'name': 'Show CJK Guide',
 				'action': self.toggleCjkGuide,
 				'state': self.cjkGuideState,
@@ -152,26 +137,37 @@ class CJKMetrics(SelectTool):
 			},
 		]
 
-
 	def toggleMedialAxes(self):
 		self.medialAxesState = not self.medialAxesState
 		self.generalContextMenus = self.buildContextMenus()
 
-
 	def toggleCentralArea(self):
 		self.centralAreaState = not self.centralAreaState
+		if self.centralAreaState:
+			self.windowCentralArea.group.textBoxSpacing.enable(True)
+			self.windowCentralArea.group.editTextSpacing.enable(True)
+			self.windowCentralArea.group.textBoxWidth.enable(True)
+			self.windowCentralArea.group.editTextWidth.enable(True)
+			self.windowCentralArea.group.textBoxPosition.enable(True)
+			self.windowCentralArea.group.sliderPosition.enable(True)
+			self.windowCentralArea.group.textBoxPositionValue.enable(True)
+		else:
+			self.windowCentralArea.group.textBoxSpacing.enable(False)
+			self.windowCentralArea.group.editTextSpacing.enable(False)
+			self.windowCentralArea.group.textBoxWidth.enable(False)
+			self.windowCentralArea.group.editTextWidth.enable(False)
+			self.windowCentralArea.group.textBoxPosition.enable(False)
+			self.windowCentralArea.group.sliderPosition.enable(False)
+			self.windowCentralArea.group.textBoxPositionValue.enable(False)
 		self.generalContextMenus = self.buildContextMenus()
-
 
 	def toggleCjkGuide(self):
 		self.cjkGuideState = not self.cjkGuideState
 		self.generalContextMenus = self.buildContextMenus()
 
-
 	def toggleCjkGuideScaling(self):
 		self.cjkGuideScalingState = not self.cjkGuideScalingState
 		self.generalContextMenus = self.buildContextMenus()
-
 
 	@objc.python_method
 	# def background(self, layer):
@@ -183,7 +179,6 @@ class CJKMetrics(SelectTool):
 			self.drawCentralArea(layer)
 		if self.cjkGuideState:
 			self.drawCjkGuide(layer)
-
 
 	@objc.python_method
 	def drawMedialAxes(self, layer):
@@ -222,7 +217,6 @@ class CJKMetrics(SelectTool):
 		path.setLineWidth_(1 / scale)
 		path.stroke()
 
-
 	@objc.python_method
 	def drawCentralArea(self, layer):
 		'''Draw the central area (第二中心线).'''
@@ -241,7 +235,6 @@ class CJKMetrics(SelectTool):
 
 		NSBezierPath.fillRect_(((postion - spacing / 2 - width / 2, descender), (width, height)))
 		NSBezierPath.fillRect_(((postion + spacing / 2 - width / 2, descender), (width, height)))
-
 
 	@objc.python_method
 	def drawCjkGuide(self, layer):
@@ -287,7 +280,6 @@ class CJKMetrics(SelectTool):
 			return self.editViewController().graphicView().scale()
 		except:
 			return 1.0
-
 
 	@objc.python_method
 	def __file__(self):
