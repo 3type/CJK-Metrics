@@ -259,12 +259,12 @@ class CJKMetrics(SelectTool):
 		viewWidth = visibleRect.size.width / scale
 		viewHeight = visibleRect.size.height / scale
 
-		master = layer.associatedFontMaster()
-		height = master.ascender - master.descender
+		# master = layer.associatedFontMaster()
+		height = layer.ascender - layer.descender
 		width  = layer.width
 
 		x = horizontal * width
-		y = master.descender + vertical * height
+		y = layer.descender + vertical * height
 
 		# TODO: color
 		color = NSColor.systemGreenColor()
@@ -283,9 +283,8 @@ class CJKMetrics(SelectTool):
 		'''Draw the central area (第二中心区域).'''
 		spacing = self.centralAreaSpacing
 
-		master = layer.associatedFontMaster()
-		descender = master.descender
-		ascender = master.ascender
+		descender = layer.descender
+		ascender = layer.ascender
 
 		if not self.centralAreaRotateState:
 			width = self.centralAreaWidth
