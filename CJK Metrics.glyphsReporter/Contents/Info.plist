@@ -17,7 +17,7 @@
 	<key>CFBundleVersion</key>
 	<string>0</string>
 	<key>UpdateFeedURL</key>
-	<string>https://raw.githubusercontent.com/3type/CJK-Metrics/master/CJK%20Metrics.glyphsTool/Contents/Info.plist</string>
+	<string>https://raw.githubusercontent.com/3type/CJK-Metrics/master/CJK%20Metrics.glyphsReporter/Contents/Info.plist</string>
 	<key>productPageURL</key>
 	<string>https://github.com/3type/CJK-Metrics</string>
 	<key>productReleaseNotes</key>

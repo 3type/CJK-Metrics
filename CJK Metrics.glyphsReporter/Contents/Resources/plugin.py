@@ -3,36 +3,32 @@
 ###########################################################################################################
 #
 #
-#	Select Tool Plugin: CJK Metrics
+#	Reporter Plugin: CJK Metrics
 #
 #	Read the docs:
-#	https://github.com/schriftgestalt/GlyphsSDK/tree/master/Python%20Templates/SelectTool
+#	https://github.com/schriftgestalt/GlyphsSDK/tree/master/Python%20Templates/Reporter
 #
 #
-##############################################################################################
+###########################################################################################################
 
 import objc
-
 from Foundation import NSAffineTransform, NSBezierPath, NSColor
-
 from GlyphsApp import *
 from GlyphsApp.plugins import *
-
 from vanilla import *
 
 
 CJK_GUIDE_GLYPH = '_cjkguide'
 
 
-class CJKMetrics(SelectTool):
+class CJKMetrics(ReporterPlugin):
 
 	@objc.python_method
 	def settings(self):
-		self.name = Glyphs.localize({
+		self.menuName = Glyphs.localize({
 			'en': u'CJK Metrics',
 			'zh': u'汉字度量',
 		})
-		self.keyboardShortcut = 'c'
 
 		self.medialAxesState = True
 		self.centralAreaState = True
@@ -55,7 +51,8 @@ class CJKMetrics(SelectTool):
 				'en': u'Spacing',
 				'zh': u'间距',
 			}),
-			sizeStyle='small')
+			sizeStyle='small',
+		)
 		self.windowCentralArea.group.editTextSpacing = EditText(
 			Glyphs.localize({
 				'en': (85, 2, 60, 16),
@@ -63,7 +60,8 @@ class CJKMetrics(SelectTool):
 			}),
 			sizeStyle='small',
 			placeholder='500',
-			callback=self.editTextCentralAreaSpacingCallback)
+			callback=self.editTextCentralAreaSpacingCallback,
+		)
 		self.windowCentralArea.group.textBoxWidth = TextBox(
 			Glyphs.localize({
 				'en': (30, 24, 50, 16),
@@ -73,7 +71,8 @@ class CJKMetrics(SelectTool):
 				'en': u'Width',
 				'zh': u'宽度',
 			}),
-			sizeStyle='small')
+			sizeStyle='small',
+		)
 		self.windowCentralArea.group.editTextWidth = EditText(
 			Glyphs.localize({
 				'en': (85, 22, 60, 16),
@@ -81,7 +80,8 @@ class CJKMetrics(SelectTool):
 			}),
 			sizeStyle='small',
 			placeholder='100',
-			callback=self.editTextCentralAreaWidthCallback)
+			callback=self.editTextCentralAreaWidthCallback,
+		)
 		self.windowCentralArea.group.textBoxPosition = TextBox(
 			Glyphs.localize({
 				'en': (30, 44, 50, 16),
@@ -91,40 +91,26 @@ class CJKMetrics(SelectTool):
 				'en': u'Position',
 				'zh': u'位置',
 			}),
-			sizeStyle='small')
+			sizeStyle='small',
+		)
 		self.windowCentralArea.group.sliderPosition = Slider(
 			Glyphs.localize({
 				'en': (85, 42, 60, 16),
 				'zh': (65, 42, 60, 16),
 			}),
 			sizeStyle='small',
-			callback=self.sliderCentralAreaPositionCallback)
+			callback=self.sliderCentralAreaPositionCallback,
+		)
 		self.windowCentralArea.group.textBoxPositionValue = TextBox(
 			Glyphs.localize({
 				'en': (150, 44, 50, 16),
 				'zh': (130, 44, 50, 16),
 			}),
 			text='{}%'.format(self.centralAreaPosition),
-			sizeStyle='small')
+			sizeStyle='small',
+		)
 
 		self.generalContextMenus = self.buildContextMenus()
-
-	@objc.python_method
-	def activate(self):
-		self.initCjkGuideGlyph()
-
-	@objc.python_method
-	def initCjkGuideGlyph(self):
-		font = Glyphs.font
-		if font.glyphs[CJK_GUIDE_GLYPH] is None:
-			# TODO: dialogue
-			font.glyphs.append(GSGlyph(CJK_GUIDE_GLYPH))
-			print('[INFO]: Add glyph \'{}\'!'.format(CJK_GUIDE_GLYPH))
-
-			cjkGuideGlyph = font.glyphs[CJK_GUIDE_GLYPH]
-			cjkGuideGlyph.export = False
-			for layer in cjkGuideGlyph.layers:
-				layer.width = 1000.0  # TODO: use real width
 
 	@objc.python_method
 	def editTextCentralAreaSpacingCallback(self, sender):
@@ -140,7 +126,7 @@ class CJKMetrics(SelectTool):
 		self.windowCentralArea.group.textBoxPositionValue.set('{:.1f}%'.format(sender.get()))
 
 	@objc.python_method
-	def buildContextMenus(self, sender=None):
+	def buildContextMenus(self):
 		return [
 			{
 				'name': Glyphs.localize({
@@ -231,9 +217,7 @@ class CJKMetrics(SelectTool):
 		self.generalContextMenus = self.buildContextMenus()
 
 	@objc.python_method
-	# def background(self, layer):
 	def foreground(self, layer):
-		# TODO: use foreground() temporarily
 		if self.medialAxesState:
 			self.drawMedialAxes(layer)
 		if self.centralAreaState:
@@ -250,7 +234,7 @@ class CJKMetrics(SelectTool):
 
 		scale = self.getScale()
 
-		view = self.editViewController().graphicView()
+		view = Glyphs.font.currentTab.graphicView()
 		visibleRect = view.visibleRect()
 		activePosition = view.activePosition()
 
@@ -259,7 +243,6 @@ class CJKMetrics(SelectTool):
 		viewWidth = visibleRect.size.width / scale
 		viewHeight = visibleRect.size.height / scale
 
-		# master = layer.associatedFontMaster()
 		height = layer.ascender - layer.descender
 		width  = layer.width
 
@@ -310,6 +293,7 @@ class CJKMetrics(SelectTool):
 	@objc.python_method
 	def drawCjkGuide(self, layer):
 		'''Draw the CJK guide (汉字参考线).'''
+		self.initCjkGuideGlyph()
 
 		# TODO: color
 		color = NSColor.systemOrangeColor().colorWithAlphaComponent_(0.1)
@@ -345,12 +329,17 @@ class CJKMetrics(SelectTool):
 			path.fill()
 
 	@objc.python_method
-	def getScale(self):
-		'''Get the scale of graphic view.'''
-		try:
-			return self.editViewController().graphicView().scale()
-		except:
-			return 1.0
+	def initCjkGuideGlyph(self):
+		font = Glyphs.font
+		if font.glyphs[CJK_GUIDE_GLYPH] is None:
+			# TODO: dialogue
+			font.glyphs.append(GSGlyph(CJK_GUIDE_GLYPH))
+			print('[INFO]: Add glyph \'{}\'!'.format(CJK_GUIDE_GLYPH))
+
+			cjkGuideGlyph = font.glyphs[CJK_GUIDE_GLYPH]
+			cjkGuideGlyph.export = False
+			for layer in cjkGuideGlyph.layers:
+				layer.width = 1000.0  # TODO: use real width
 
 	@objc.python_method
 	def __file__(self):
