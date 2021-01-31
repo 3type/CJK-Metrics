@@ -334,12 +334,24 @@ class CJKMetrics(ReporterPlugin):
 		if font.glyphs[CJK_GUIDE_GLYPH] is None:
 			# TODO: dialogue
 			font.glyphs.append(GSGlyph(CJK_GUIDE_GLYPH))
-			print('[INFO]: Add glyph \'{}\'!'.format(CJK_GUIDE_GLYPH))
+			print('[CJK Metrics Info]: Add glyph \'{}\'!'.format(CJK_GUIDE_GLYPH))
 
-			cjkGuideGlyph = font.glyphs[CJK_GUIDE_GLYPH]
-			cjkGuideGlyph.export = False
-			for layer in cjkGuideGlyph.layers:
-				layer.width = 1000.0  # TODO: use real width
+			layerWidth = 1000.0
+			for param in filter(lambda x: x.name == 'Default Layer Width', font.customParameters):
+				split = param.value.split(':')
+				if len(split) == 1:
+					layerWidth = toFloat(split[0])
+				else:
+					if split[0].strip() == 'han':
+						layerWidth = toFloat(split[1])
+
+			for layer in font.glyphs[CJK_GUIDE_GLYPH].layers:
+					layer.width = layerWidth
+
+		cjkGuideGlyph = font.glyphs[CJK_GUIDE_GLYPH]
+		cjkGuideGlyph.export = False
+		cjkGuideGlyph.storeScript = True
+		cjkGuideGlyph.script = 'han'
 
 	@objc.python_method
 	def __file__(self):
